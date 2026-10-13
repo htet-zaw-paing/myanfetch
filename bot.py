@@ -9,7 +9,10 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiohttp import web 
 
-BOT_TOKEN = "8235610672:AAF6QpjwxqR-7m7CPIJoU6wMMdX_77jXqyc" 
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+
+if not BOT_TOKEN:
+    raise ValueError("No BOT_TOKEN found! Make sure you added it to Render's Environment Variables.")
 
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
@@ -59,10 +62,10 @@ async def process_quality_selection(callback: CallbackQuery, state: FSMContext):
     user_data = await state.get_data()
     url = user_data.get("url")
     if not url:
-        return await callback.message.edit_text("Session expired.")
+        return await callback.message.edit_text("Session expired. Please send the link again.")
         
     bitrate = callback.data.split("_")[1] 
-    await callback.message.edit_text(f"🎧 Downloading at {bitrate} kbps...")
+    await callback.message.edit_text(f"🎧 Downloading at {bitrate} kbps... Please wait.")
     
     try:
         data = await asyncio.to_thread(download_mp3_sync, url, bitrate)
@@ -70,18 +73,22 @@ async def process_quality_selection(callback: CallbackQuery, state: FSMContext):
         audio_file = FSInputFile(filepath)
         
         await callback.message.answer_audio(
-            audio=audio_file, title=data["title"], 
-            performer=data["uploader"], duration=data["duration"]
+            audio=audio_file, 
+            title=data["title"], 
+            performer=data["uploader"], 
+            duration=data["duration"],
+            caption=f"Downloaded successfully at {bitrate} kbps"
         )
-        if os.path.exists(filepath): os.remove(filepath)
+        if os.path.exists(filepath): 
+            os.remove(filepath)
         await callback.message.delete()
     except Exception as e:
-        await callback.message.edit_text(f"❌ Error: {str(e)}")
+        await callback.message.edit_text(f"❌ Error downloading: {str(e)}")
     finally:
         await state.clear()
 
 async def handle_ping(request):
-    return web.Response(text="Bot is awake!")
+    return web.Response(text="Bot is awake and running on Render!")
 
 async def start_web_server():
     app = web.Application()
@@ -95,7 +102,8 @@ async def start_web_server():
 
 async def main():
     await start_web_server()
-    print("Bot is online!")
+    print("Web server is online!")
+    
     await bot.delete_webhook(drop_pending_updates=True) 
     await dp.start_polling(bot)
 
