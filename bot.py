@@ -9,14 +9,13 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiohttp import web 
 
-# Using your new TELE_BOT variable
 TELE_BOT = os.getenv("TELE_BOT")
 
 if not TELE_BOT:
     raise ValueError("No TELE_BOT found!")
 
 bot = Bot(token=TELE_BOT)
-dp = Dispatcher() # <-- This was the missing line causing the crash!
+dp = Dispatcher()
 
 class DownloadProcess(StatesGroup):
     url = State()
@@ -25,8 +24,8 @@ def download_mp3_sync(video_url: str, bitrate: str) -> dict:
     ydl_opts = {
         'format': 'm4a/bestaudio/best',
         'outtmpl': '%(id)s.%(ext)s',
-        # STRICT MOBILE BYPASS: No cookies, only mobile API to bypass the HTML block.
-        'extractor_args': {'youtube': {'player_client': ['android', 'ios']}},
+        # STRICT TV CLIENT: Bypasses the HTML block and securely accepts cookies
+        'extractor_args': {'youtube': {'player_client': ['tv']}},
         'postprocessors': [{
             'key': 'FFmpegExtractAudio',
             'preferredcodec': 'mp3',
@@ -35,6 +34,10 @@ def download_mp3_sync(video_url: str, bitrate: str) -> dict:
         'quiet': True,
         'noplaylist': True
     }
+    
+    # This is restored: We MUST inject the cookies to bypass Render's IP block
+    if os.path.exists("cookies.txt"):
+        ydl_opts['cookiefile'] = "cookies.txt"
         
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(video_url, download=True)
@@ -103,6 +106,12 @@ async def start_web_server():
     await site.start()
 
 async def main():
+    # This writes your Render environment cookies to the required text file
+    cookies_text = os.getenv("YOUTUBE_COOKIES")
+    if cookies_text:
+        with open("cookies.txt", "w") as f:
+            f.write(cookies_text)
+
     await start_web_server()
     await bot.delete_webhook(drop_pending_updates=True) 
     await dp.start_polling(bot)
