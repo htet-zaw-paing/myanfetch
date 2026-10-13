@@ -9,12 +9,14 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiohttp import web 
 
+# Using your new TELE_BOT variable
 TELE_BOT = os.getenv("TELE_BOT")
 
 if not TELE_BOT:
     raise ValueError("No TELE_BOT found!")
 
 bot = Bot(token=TELE_BOT)
+dp = Dispatcher() # <-- This was the missing line causing the crash!
 
 class DownloadProcess(StatesGroup):
     url = State()
@@ -23,6 +25,7 @@ def download_mp3_sync(video_url: str, bitrate: str) -> dict:
     ydl_opts = {
         'format': 'm4a/bestaudio/best',
         'outtmpl': '%(id)s.%(ext)s',
+        # STRICT MOBILE BYPASS: No cookies, only mobile API to bypass the HTML block.
         'extractor_args': {'youtube': {'player_client': ['android', 'ios']}},
         'postprocessors': [{
             'key': 'FFmpegExtractAudio',
