@@ -59,9 +59,12 @@ def download_mp3_sync(video_url: str, bitrate: str) -> dict:
         "noplaylist": True,
         "quiet": False,
         "no_warnings": False,
+        "verbose": True,
         "retries": 3,
+        "extractor_retries": 3,
         "fragment_retries": 3,
         "socket_timeout": 30,
+        "sleep_interval_requests": 1,
         "postprocessors": [
             {
                 "key": "FFmpegExtractAudio",
