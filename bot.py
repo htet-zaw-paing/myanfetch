@@ -24,8 +24,8 @@ def download_mp3_sync(video_url: str, bitrate: str) -> dict:
     ydl_opts = {
         'format': 'm4a/bestaudio/best',
         'outtmpl': '%(id)s.%(ext)s',
-        # STRICT TV CLIENT: Bypasses the HTML block and securely accepts cookies
         'extractor_args': {'youtube': {'player_client': ['tv']}},
+        'source_address': '0.0.0.0', 
         'postprocessors': [{
             'key': 'FFmpegExtractAudio',
             'preferredcodec': 'mp3',
@@ -34,8 +34,7 @@ def download_mp3_sync(video_url: str, bitrate: str) -> dict:
         'quiet': True,
         'noplaylist': True
     }
-    
-    # This is restored: We MUST inject the cookies to bypass Render's IP block
+        
     if os.path.exists("cookies.txt"):
         ydl_opts['cookiefile'] = "cookies.txt"
         
@@ -106,7 +105,6 @@ async def start_web_server():
     await site.start()
 
 async def main():
-    # This writes your Render environment cookies to the required text file
     cookies_text = os.getenv("YOUTUBE_COOKIES")
     if cookies_text:
         with open("cookies.txt", "w") as f:
