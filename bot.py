@@ -6,6 +6,7 @@ from pathlib import Path
 import yt_dlp
 from aiohttp import web
 from aiogram import Bot, Dispatcher, F
+from aiogram.exceptions import TelegramConflictError
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
@@ -177,7 +178,16 @@ async def main() -> None:
 
     await start_web_server()
     await bot.delete_webhook(drop_pending_updates=True)
-    await dp.start_polling(bot)
+
+    try:
+        await dp.start_polling(bot)
+    except TelegramConflictError:
+        logger.critical(
+            "Telegram rejected polling because another process is using this "
+            "bot token. Stop the other instance before restarting Render."
+        )
+    finally:
+        await bot.session.close()
 
 
 if __name__ == "__main__":
