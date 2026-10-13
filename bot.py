@@ -22,9 +22,9 @@ class DownloadProcess(StatesGroup):
 
 def download_mp3_sync(video_url: str, bitrate: str) -> dict:
     ydl_opts = {
-        'format': 'bestaudio/best',
+        'format': 'm4a/bestaudio/best',
         'outtmpl': '%(id)s.%(ext)s',
-        'extractor_args': {'youtube': {'player_client': ['ios', 'android']}},
+        'extractor_args': {'youtube': {'player_client': ['android', 'web']}},
         'postprocessors': [{
             'key': 'FFmpegExtractAudio',
             'preferredcodec': 'mp3',
