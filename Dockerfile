@@ -5,10 +5,10 @@ RUN apt-get update && apt-get install -y ffmpeg
 WORKDIR /app
 
 COPY requirements.txt .
-RUN pip install -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
+
+RUN pip install --no-cache-dir -U https://github.com/yt-dlp/yt-dlp/archive/master.zip
 
 COPY . .
-
-EXPOSE 7860
 
 CMD ["python", "bot.py"]
