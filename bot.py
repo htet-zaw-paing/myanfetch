@@ -25,7 +25,6 @@ def download_mp3_sync(video_url: str, bitrate: str) -> dict:
         'format': 'm4a/bestaudio/best',
         'outtmpl': '%(id)s.%(ext)s',
         'extractor_args': {'youtube': {'player_client': ['tv', 'web']}},
-        'impersonate': 'chrome',
         'postprocessors': [{
             'key': 'FFmpegExtractAudio',
             'preferredcodec': 'mp3',
@@ -88,7 +87,7 @@ async def process_quality_selection(callback: CallbackQuery, state: FSMContext):
             os.remove(filepath)
         await callback.message.delete()
     except Exception as e:
-        await callback.message.edit_text(f"❌ Error downloading: {str(e)}")
+        await callback.message.edit_text(f"❌ Error downloading: {repr(e)}")
     finally:
         await state.clear()
 
