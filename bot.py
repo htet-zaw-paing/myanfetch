@@ -24,7 +24,8 @@ def download_mp3_sync(video_url: str, bitrate: str) -> dict:
     ydl_opts = {
         'format': 'm4a/bestaudio/best',
         'outtmpl': '%(id)s.%(ext)s',
-        'extractor_args': {'youtube': {'player_client': ['android', 'web']}},
+        'extractor_args': {'youtube': {'player_client': ['tv', 'web']}},
+        'impersonate': 'chrome',
         'postprocessors': [{
             'key': 'FFmpegExtractAudio',
             'preferredcodec': 'mp3',
