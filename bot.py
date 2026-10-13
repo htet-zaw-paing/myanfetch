@@ -12,7 +12,7 @@ from aiohttp import web
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 
 if not BOT_TOKEN:
-    raise ValueError("No BOT_TOKEN found! Make sure you added it to Render's Environment Variables.")
+    raise ValueError("No BOT_TOKEN found!")
 
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
@@ -24,7 +24,6 @@ def download_mp3_sync(video_url: str, bitrate: str) -> dict:
     ydl_opts = {
         'format': 'bestaudio/best',
         'outtmpl': '%(id)s.%(ext)s',
-        'extractor_args': {'youtube': {'player_client': ['android']}},
         'postprocessors': [{
             'key': 'FFmpegExtractAudio',
             'preferredcodec': 'mp3',
@@ -34,6 +33,9 @@ def download_mp3_sync(video_url: str, bitrate: str) -> dict:
         'noplaylist': True
     }
     
+    if os.path.exists("cookies.txt"):
+        ydl_opts['cookiefile'] = "cookies.txt"
+        
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(video_url, download=True)
         filepath = f"{info['id']}.mp3"
@@ -96,15 +98,17 @@ async def start_web_server():
     app.router.add_get('/', handle_ping)
     runner = web.AppRunner(app)
     await runner.setup()
-    
     port = int(os.environ.get("PORT", 8080))
     site = web.TCPSite(runner, '0.0.0.0', port)
     await site.start()
 
 async def main():
+    cookies_text = os.getenv("YOUTUBE_COOKIES")
+    if cookies_text:
+        with open("cookies.txt", "w") as f:
+            f.write(cookies_text)
+
     await start_web_server()
-    print("Web server is online!")
-    
     await bot.delete_webhook(drop_pending_updates=True) 
     await dp.start_polling(bot)
 
