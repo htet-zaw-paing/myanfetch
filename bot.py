@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import os
 from pathlib import Path
 
@@ -10,6 +11,14 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import CallbackQuery, FSInputFile, Message
 from aiogram.utils.keyboard import InlineKeyboardBuilder
+
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+    force=True,
+)
+logger = logging.getLogger("youtube-bot")
 
 
 TELE_BOT = os.getenv("TELE_BOT")
@@ -32,12 +41,12 @@ def prepare_cookies_file() -> None:
     cookies_text = os.getenv("YOUTUBE_COOKIES")
 
     if not cookies_text:
-        print("YOUTUBE_COOKIES is not set; continuing without cookies")
+        print("YOUTUBE_COOKIES is not set; continuing without cookies", flush=True)
         return
 
     cookies_text = cookies_text.replace("\\r\\n", "\n").replace("\\n", "\n")
     COOKIES_FILE.write_text(cookies_text, encoding="utf-8")
-    print(f"YouTube cookies file created: {COOKIES_FILE}")
+    print(f"YouTube cookies file created: {COOKIES_FILE}", flush=True)
 
 
 def download_mp3_sync(video_url: str, bitrate: str) -> dict:
@@ -63,9 +72,9 @@ def download_mp3_sync(video_url: str, bitrate: str) -> dict:
 
     if COOKIES_FILE.is_file() and COOKIES_FILE.stat().st_size > 0:
         ydl_opts["cookiefile"] = str(COOKIES_FILE)
-        print("Using cookies.txt")
+        print("Using cookies.txt", flush=True)
     else:
-        print("cookies.txt was not found or is empty")
+        print("cookies.txt was not found or is empty", flush=True)
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(video_url, download=True)
@@ -81,7 +90,7 @@ def download_mp3_sync(video_url: str, bitrate: str) -> dict:
 
 @dp.message(Command("start"))
 async def cmd_start(message: Message) -> None:
-    await message.answer("Hello!! Send me a YouTube link to download it as MP3.")
+    await message.answer("Hello! Send me a YouTube link to download it as MP3.")
 
 
 @dp.message(F.text.startswith("http"))
@@ -132,10 +141,12 @@ async def process_quality_selection(
         await callback.message.delete()
 
     except Exception as error:
-        print(f"Download failed: {error!r}")
+        error_text = str(error).strip() or repr(error)
+        logger.exception("Download failed")
+        print(f"Download failed: {error_text}", flush=True)
         await callback.message.edit_text(
-            "❌ Download failed. Please try again later. "
-            "Check the Render logs for the detailed yt-dlp error."
+            "❌ Download failed.\n\n"
+            f"Technical error:\n{error_text[:1200]}"
         )
 
     finally:
@@ -162,7 +173,7 @@ async def start_web_server() -> None:
 
 async def main() -> None:
     prepare_cookies_file()
-    print(f"yt-dlp version: {yt_dlp.version.__version__}")
+    print(f"yt-dlp version: {yt_dlp.version.__version__}", flush=True)
 
     await start_web_server()
     await bot.delete_webhook(drop_pending_updates=True)
