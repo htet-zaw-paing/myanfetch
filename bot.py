@@ -9,13 +9,12 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiohttp import web 
 
-BOT_TOKEN = os.getenv("BOT_TOKEN")
+TELE_BOT = os.getenv("TELE_BOT")
 
-if not BOT_TOKEN:
-    raise ValueError("No BOT_TOKEN found!")
+if not TELE_BOT:
+    raise ValueError("No TELE_BOT found!")
 
-bot = Bot(token=BOT_TOKEN)
-dp = Dispatcher()
+bot = Bot(token=TELE_BOT)
 
 class DownloadProcess(StatesGroup):
     url = State()
@@ -24,7 +23,7 @@ def download_mp3_sync(video_url: str, bitrate: str) -> dict:
     ydl_opts = {
         'format': 'm4a/bestaudio/best',
         'outtmpl': '%(id)s.%(ext)s',
-        'extractor_args': {'youtube': {'player_client': ['tv']}},
+        'extractor_args': {'youtube': {'player_client': ['android', 'ios']}},
         'postprocessors': [{
             'key': 'FFmpegExtractAudio',
             'preferredcodec': 'mp3',
@@ -33,9 +32,6 @@ def download_mp3_sync(video_url: str, bitrate: str) -> dict:
         'quiet': True,
         'noplaylist': True
     }
-    
-    if os.path.exists("cookies.txt"):
-        ydl_opts['cookiefile'] = "cookies.txt"
         
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(video_url, download=True)
@@ -104,11 +100,6 @@ async def start_web_server():
     await site.start()
 
 async def main():
-    cookies_text = os.getenv("YOUTUBE_COOKIES")
-    if cookies_text:
-        with open("cookies.txt", "w") as f:
-            f.write(cookies_text)
-
     await start_web_server()
     await bot.delete_webhook(drop_pending_updates=True) 
     await dp.start_polling(bot)
